@@ -7,7 +7,6 @@
     "url": "git://github.com/greypants/gulp-starter.git"
   },
   "browser": {
-    "underscore": "backbone/node_modules/underscore",
     "plugin": "./src/javascript/vendor/jquery-plugin.js"
   },
   "browserify": {
@@ -44,7 +43,7 @@
     "watchify": "~1.0.2"
   },
   "dependencies": {
-    "backbone": "~1.1.2",
-    "jquery": "~2.1.0"
+    "jquery": "~1.11.0",
+    "esprima": "^1.2.2"
   }
 }

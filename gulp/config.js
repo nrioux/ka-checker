@@ -34,14 +34,6 @@ module.exports = {
     // A separate bundle will be generated for each
     // bundle config in the list below
     bundleConfigs: [{
-      entries: './src/javascript/app.coffee',
-      dest: dest,
-      outputName: 'app.js'
-    }, {
-      entries: './src/javascript/head.coffee',
-      dest: dest,
-      outputName: 'head.js'
-    }, {
         entries: './src/javascript/editor.js',
         dest: dest,
         outputName: 'editor.js'
