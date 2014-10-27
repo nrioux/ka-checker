@@ -1,30 +1,29 @@
-var CodeMirror = require("codemirror");
-var $ = require("jquery");
-var _ = require("lodash");
-var Parser = require("acorn");
-var checkAST = require("./katest.js");
-require("codemirror/mode/javascript/javascript.js");
+var CodeMirror = require('codemirror');
+// ui-codemirror expects CM to be on window
+window.CodeMirror = CodeMirror;
 
-// initialize editor
-var editor = CodeMirror($('#editor').get(0), {
-    lineNumbers: true,
-    mode: 'javascript',
-    indentUnit: 4
-});
+var _ = require('lodash');
+var $ = require('jquery');
+var Parser = require('esprima');
+var checkAST = require('./katest.js');
+require('angular');
+require('codemirror/mode/javascript/javascript.js');
+require('./vendor/ui-codemirror.js');
 
 
-/**
- * Parse the given string.
- */
-function checkCode(code) {
-    var ast = Parser.parse(code);
-    console.log(ast);
-    var results = checkAST(ast, {
-        blacklist: ['IfStatement']
-    });
-    return results;
-}
-
-$('#check-btn').click(function () {
-    console.log(checkCode(editor.getValue()));
-});
+angular.module('editorApp', ['ui.codemirror'])
+    .controller('EditorCtrl', ['$scope', function ($scope) {
+        console.log('init ctrl');
+        $scope.code = 'alert("Hello, world!");';
+        $scope.messages = [];
+        
+        $scope.checkCode = function () {
+            console.log("code: " + $scope.code);
+            var ast = Parser.parse($scope.code, {loc: true});
+            var result = checkAST(ast, {
+                whitelist: ['IfStatement']
+            });
+            $scope.messages = result.errors.concat(result.warnings);
+            console.log($scope.messages);
+        };
+    }]);

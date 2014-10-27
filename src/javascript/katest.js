@@ -50,7 +50,7 @@ module.exports = function checkAST(ast, options) {
     });
     var recognizers = _.clone(options.recognizers);
     var whitelist = {};
-    _.forEach(whitelist, function (nodeType) {
+    _.forEach(options.whitelist, function (nodeType) {
         whitelist[nodeType] = false;
     });
 
@@ -83,9 +83,12 @@ module.exports = function checkAST(ast, options) {
             });
         }
     });
-
+    
+    console.log(options.whitelist);
+    console.log(whitelist);
     // Ensure that all whitelisted node types were used
     _.forOwn(whitelist, function (found, nodeType) {
+        console.log('whitelist: ' + nodeType + ' : ' + found);
         if (!found) {
             ctx.error('Expected construct not found: ' + nodeType);
         }
