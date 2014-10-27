@@ -27,37 +27,63 @@ Context.prototype.warning = function (message, node) {
     });
 };
 
-function initTemplate(templ) {
-    _.transform(templ, function (result, val, key) {
-        var data = templ[key];
-        if (_.isString(data)) {
-            result[key] = {'_found': false, 'nodeType': key};
-        } else {
-            result[key] = initTemplate(val);
-        }
-    });
+/*
+ Templates may be a string containing a node type, an array of subtemplates that all must match a 
+ given node, or a map of node type strings to subtemplates indicating that the subtemplate must be 
+ found in the children of the key.
+*/
+
+/**
+ * Determine whether a given AST node matches a given template
+ */
+function matches(node, templ) {
+    // determine whether a child node matches a given template
+    function childMatches(templ) {
+        var found = false;
+        _.forIn(node, function(val, prop) {
+            // loop through each property on the node, determine whether
+            // a given object is a node by looking at its type attribute
+            if (_.isArray(val)) {
+                _.forEach(val, function (child) {
+                    if (_.isString(child.type) && matches(child, templ)) {
+                        found = true;
+                        return false;
+                    }
+                });
+            } else if (val && _.isString(val.type) && matches(val, templ)) {
+                found = true;
+                return false;
+            }
+        });
+        return found;
+    }
+
+    if (_.isString(templ)) {
+        // if the template is a string, we must find a node of the given type
+        return node.type == templ || childMatches(templ);
+    } else if (_.isArray(templ)) {
+        // if the template is an array, the current node must match each subtemplate
+        return _.every(templ, function (subtempl) {
+            return matches(node, subtempl);
+        });
+    } else {
+        // the template is an object of form {nodeType: subtemplate, ...}
+        return _.every(templ, function (subtempl, nodeType) {
+            if (nodeType === node.type && childMatches(subtempl)) {
+                return true;
+            } else {
+                return childMatches(templ);
+            }
+        });
+    }
 }
 
-function isComplete(templ) {
-    var complete = true;
-    _.forEachOwn(templ, function (subtempl, nodeType) {
-        if (_.has(subtempl, '_found')) {
-            if (!subtempl._found) {
-                complete = false;
-                return false;
-            }
-        } else {
-            if (!isComplete(subtempl)) {
-                complete = false;
-                return false;
-            }
-        }
-    });
-    return complete;
-}
 
 /**
  * Takes parsed JS code and runs the specified tests against it.
+ * 
+ * Note: all mentions of node types refer to the Mozilla Parser API:
+ * https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/Parser_API
  *
  * @param {Object} options A map with the following values:
  * - whitelist: a list of node types that must appear in the AST
@@ -65,6 +91,7 @@ function isComplete(templ) {
  * - recognizers: functions that  determine whether a given AST node is allowed
  *                Recognizers take a context object and an AST node and should call
  *                context.error() or context.warning() if a problem is found.
+ * - templates: a list of templates that must match the AST
  * @return {Object} An object with the following properties:
  * - isValid: boolean indicating if all tests passed
  * - errors: list of errors
@@ -83,9 +110,8 @@ module.exports = function checkAST(ast, options) {
     _.forEach(options.whitelist, function (nodeType) {
         whitelist[nodeType] = false;
     });
-    var templates = _.map(options.templates, initTemplate);
+    var templates = _.clone(options.templates);
     
-
     // Add a recognizer to reject all blacklisted node types
     recognizers.push(function (context, node) {
         if (_.contains(options.blacklist, node.type)) {
@@ -94,9 +120,15 @@ module.exports = function checkAST(ast, options) {
     });
 
     var ctx = new Context();
-    var targets = {};
-    var found = [];
-    var foundStack = [];
+    
+    // Ideally we would check templates together with the white/blacklist.
+    // However, separating the code here makes it much easier to follow,
+    // and makes it easier to give good error messages.
+    if((templates && !_.isArray(templates)) || (templates && templates.length >= 1)) {
+        if(!matches(ast, templates)) {
+            ctx.error('Template mismatch.', ast);
+        }
+    }
 
     // Walk through the AST
     traverse(ast, {
@@ -109,20 +141,6 @@ module.exports = function checkAST(ast, options) {
             _.each(recognizers, function (rec) {
                 rec(ctx, node);
             });
-
-            // Templates
-            _.forEach(found, function (outerNodeType) {
-                _.remove(templates[outerNodeType], function (innerNodeType) {
-                    return innerNodeType == node.type;
-                });
-            });
-            
-            foundStack.push(found);
-            found = _.clone(found);
-            found.push(node.type);
-        },
-        post: function () {
-            found = foundStack.pop();
         }
     });
     
@@ -132,9 +150,6 @@ module.exports = function checkAST(ast, options) {
             ctx.error('Expected construct not found: ' + nodeType);
         }
     });
-
-    // Ensure that all templates have been matched
-    
 
     return ctx;
 };

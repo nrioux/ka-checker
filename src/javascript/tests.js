@@ -15,7 +15,7 @@ module.exports = [
         name: 'Must use "if" inside of "for"',
         options: {
             templates: [{
-                'ForStatement': ['IfStatement']
+                'ForStatement': 'IfStatement'
             }]
         }
     }

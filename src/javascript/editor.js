@@ -13,25 +13,46 @@ require('./vendor/ui-codemirror.js');
 
 angular.module('editorApp', ['ui.codemirror'])
     .controller('EditorCtrl', ['$scope', function ($scope) {
-        console.log('init ctrl');
+        var worker;
+        if (window.Worker) {
+            worker = new Worker('editor-worker.js');
+        }
         $scope.code = 'alert("Hello, world!");if(true) {}';
         $scope.tests = require('./tests.js');
         $scope.curTest = 0;
         $scope.messages = [];
         
+        
+        if (worker) {
+            worker.addEventListener('message', function (event) {
+                if (event.data.ok) {
+                    $scope.receiveResult(event.data.result);
+                }
+            }, false);
+        }
+
+        $scope.receiveResult = function (result) {
+            $scope.$apply(function () {
+                $scope.messages = result.errors.concat(result.warnings);
+            });
+        };
+
         // Run the tests, in a worker if possible
         $scope.checkCode = function () {
-            if (false) {
+            var test = $scope.tests[$scope.curTest];
+            var parserOptions = {loc: true};
+            if (worker) {
                 // the browser supports web workers
-                
+                worker.postMessage({
+                    code: $scope.code,
+                    parserOptions: parserOptions,
+                    testOptions: test.options
+                });
             } else {
                 _.defer(function () {
-                    $scope.$apply(function () {
-                        var ast = Parser.parse($scope.code, {loc: true});
-                        var test = $scope.tests[$scope.curTest];
-                        var result = checkAST(ast, test.options);
-                        $scope.messages = result.errors.concat(result.warnings);
-                    });
+                    var ast = Parser.parse($scope.code, parserOptions);
+                    var result = checkAST(ast, test.options);
+                    $scope.receiveResult(result);
                 });
             }
         };
