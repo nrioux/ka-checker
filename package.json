@@ -40,10 +40,15 @@
     "pretty-hrtime": "~0.2.1",
     "require-dir": "^0.1.0",
     "vinyl-source-stream": "~0.1.1",
-    "watchify": "~1.0.2"
+    "watchify": "~1.0.2",
+    "gulp-mocha": "^1.1.1"
   },
   "dependencies": {
-    "jquery": "~1.11.0",
-    "esprima": "^1.2.2"
+    "jquery": "^1.11.1",
+    "esprima": "^1.2.2",
+    "ast-traverse": "^0.1.1",
+    "lodash": "^2.4.1",
+    "codemirror": "^4.7.0",
+    "angular": "^1.2.23"
   }
 }

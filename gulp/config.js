@@ -22,6 +22,9 @@ module.exports = {
     src: src + "/images/**",
     dest: dest + "/images"
   },
+  tests: {
+    src: './tests/*.js'
+  },
   markup: {
     src: src + "/htdocs/**",
     dest: dest
