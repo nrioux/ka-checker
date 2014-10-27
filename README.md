@@ -25,7 +25,7 @@ Before the first build, run `npm install` to install the project's dependencies.
 To test the project, run `gulp`. To run the unit tests run `gulp tests`.
 
 ## API
-The API is implemented in `src/javascript/katest.js`. This file exports the checkAST(`ast`, `options`) function.
+Overall, the goal was to keep the API easy to use and reasonably efficient. It is implemented in `src/javascript/katest.js`. This file exports the checkAST(`ast`, `options`) function.
 - `ast` is an abstract syntax tree as specified by the Mozilla Parser API
 - `options` is an object that may contain the following keys:
   - `whitelist` is an array of node types that the code must contain
@@ -52,6 +52,8 @@ For example,
 ```
 Matches a function declaration with an if and a return inside of it.
 
-## Design Decisions
-
+## Notes
+`checkAST` uses the ast-traverse module to perform a depth-first search over the given AST to check the blacklist, whitelist, and recognizers. Unfortunately, templates are more difficult to match and are currently checked in a second DFS due to time constraints. Ideally these two passes should be combined into one.
+    
 ## Browser Compatibility
+The goal was to support IE back to version 8. This forces us to use an older version of Angular and the compatibility build of Lodash. The other dependencies should support IE8. Web workers are used in browsers that support them.
