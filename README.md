@@ -1,87 +1,57 @@
-gulp-starter
-============
+# Khan Academy Code Checker
 
-Starter Gulp + Browserify project with examples of how to accomplish some common tasks and workflows. Read the [blog post](http://viget.com/extend/gulp-browserify-starter-faq) for more context, and check out the [Wiki](https://github.com/greypants/gulp-starter/wiki) for some good background knowledge.
+The structure of this project is based on [Gulp Starter](https://github.com/greypants/gulp-starter).
 
-Includes the following tools, tasks, and workflows:
+## Dependencies
+This project depends on a few other projects to build.
+- [Gulp](http://gulpjs.com/)
+- [Browserify](http://browserify.org/)/[Watchify](https://github.com/substack/watchify)
+- [SASS](http://sass-lang.com/) (with [compass](http://compass-style.org/)
+- [Mocha](http://mochajs.org/) for unit tests
 
-- [Browserify](http://browserify.org/) (with [browserify-shim](https://github.com/thlorenz/browserify-shim))
-- [Watchify](https://github.com/substack/watchify) (caching version of browserify for super fast rebuilds)
-- [SASS](http://sass-lang.com/) (with [compass](http://compass-style.org/) and [source maps](https://github.com/sindresorhus/gulp-ruby-sass#sourcemap)!)
-- [CoffeeScript](http://coffeescript.org/) (with source maps!)
-- [jQuery](http://jquery.com/) (from npm)
-- [Backbone](http://backbonejs.org/) (from npm)
-- [Handlebars](http://handlebarsjs.com/) (as a backbone dependency)
-- [BrowserSync](http://browsersync.io) for live reloading and a static server
-- Image optimization
-- Error Notifications in Notification Center
-- Non common-js vendor code (like a jQuery plugin)
+Be sure to install gulp with `npm install -g gulp`. If you have bundler, then the other build tools can be installed from the Gemfile with `bundle`.
 
-If you've never used Node or npm before, you'll need to install Node.
-If you use homebrew, do:
+On the client-side, a some open-source libraries are used as well:
+- A bit of [Bootstrap](http://getbootstrap.com/).
+- [Esprima](http://esprima.org/) was chosen over Acorn, however the code is written mostly independent of this decision. Acorn claims to be faster, but the difference was not noticable in my tests. On the other hand, Esprima conforms to the Mozilla Parser API's spec for source locations, while Acorn does not seem to. Esprima also seemed to be a more mature project.
+- [Lodash](https://lodash.com/)
+- [Codemirror](http://codemirror.net/)
+- [AngularJS](http://angularjs.org), version 1.2 for IE8 compatibility
+- [jQuery](http://jquery.com/), version 1.11 for IE8 compatibility
 
+## Build
+Before the first build, run `npm install` to install the project's dependencies.
+
+To test the project, run `gulp`. To run the unit tests run `gulp tests`.
+
+## API
+The API is implemented in `src/javascript/katest.js`. This file exports the checkAST(`ast`, `options`) function.
+- `ast` is an abstract syntax tree as specified by the Mozilla Parser API
+- `options` is an object that may contain the following keys:
+  - `whitelist` is an array of node types that the code must contain
+  - `blacklist` is an array of node types that the code cannot contain
+  - `recognizers` is a list of recognizer functions (see below) that determine whether a given AST node is valid
+  - `templates` is a template object (see below) to match the AST against
+
+checkAST returns an object with a boolean `isValid` attribute representing whether the test completed without errors and `errors`/`warnings` attributes giving more information on problems found. Each error and warning has `message` and `node` attributes.
+
+### Recognizers
+A recognizer is a function that takes `context` and `node` arguments. If there is a problem with `node`, then it should call `context.error(node, message)`. It may also call `context.warning`.
+
+### Templates
+A template may be a string, an array of subtemplates, or an object mapping strings to subtemplates.
+- If the template is a string, then it specifies the type that the current node or a descendant of it must have.
+- If the template is an array of subtemplates, then every subtemplate must match the current node.
+- If the template is a map from strings to subtemplates, then each subtemplate must be a descendant of a node of the type represented by the corresponding string. 
+
+For example,
 ```
-brew install node
+{
+    'FunctionDeclaration': ['IfStatement', 'ReturnStatement']
+}
 ```
+Matches a function declaration with an if and a return inside of it.
 
-Otherwise, you can download and install from [here](http://nodejs.org/download/).
+## Design Decisions
 
-### Install Gulp Globally
-
-Gulp must be installed globally in order to use the command line tools. *You may need to use `sudo`*
-
-
-```
-npm install -g gulp
-```
-
-Alternatively, you can run the version of gulp installed local to the project instead with
-
-
-```
-./node_modules/.bin/gulp
-```
-
-### Install Sass and Compass (if you haven't already)
-
-
-The gulp-compass module relies on Compass already being installed on your system.
-
-If you have bundler installed, simply run bundle to install dependencies from the `Gemfile`
-
-
-```
-bundle
-```
-
-Otherwise,
-
-
-```
-gem install sass
-gem install compass --pre
-```
-
-### Install npm dependencies
-
-```
-npm install
-```
-
-This runs through all dependencies listed in `package.json` and downloads them
-to a `node_modules` folder in your project directory.
-
-### Run gulp and be amazed.
-
-```
-gulp
-```
-
-This will run the `default` gulp task defined in `gulp/tasks/default.js`, which does the following:
-- Run 'watch', which has 2 task dependencies, `['setWatch', 'browserSync']`
-- `setWatch` sets a variable that tells the browserify task whether or not to use watchify.
-- `browserSync` has `build` as a task dependecy, so that all your assets will be processed before browserSync tries to serve them to you in the browser.
-- `build` includes the following tasks: `['browserify', 'sass', 'images', 'markup']`
-
-### Configuration
-All paths and plugin settings have been abstracted into a centralized config object in `gulp/config.js`. Adapt the paths and settings to the structure and needs of your project.
+## Browser Compatibility
