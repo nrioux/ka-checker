@@ -37,6 +37,10 @@ module.exports = {
         entries: './src/javascript/editor.js',
         dest: dest,
         outputName: 'editor.js'
+    }, {
+        entries: './src/javascript/editor-worker.js',
+        dest: dest,
+        outputName: 'editor-worker.js'
     }]
   }
 };

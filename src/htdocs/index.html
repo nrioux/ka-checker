@@ -10,39 +10,32 @@
   <body>
     <div class="container" ng-controller="EditorCtrl">
       <div class="page-header">
-        <h1>Foo Bar 9000</h1>
+        <h1>Khan Academy</h1>
       </div>
       <div id="controls">
         <label for="test">
           Test:
         </label> 
-        <select id="test">
-          <option>One</option>
-          <option>Two</option>
-          <option>Three</option>
+        <select ng-model="curTest" ng-change="checkCode()">
+          <option ng-repeat="test in tests" value="{{ $index }}">
+            {{ test.name }}
+          </option>
         </select>
-        <button id="check-btn" ng-click="checkCode()" class="button" type="button">
-          Check JS
-        </button>
       </div>
       <div id="editor" class="editor" ng-model="code" ui-codemirror="{
       lineNumbers: true,
       lineWrapping : true,
       mode: 'javascript'
-    }"></div>
+    }" ng-change="codeChange()"></div>
       <table id="messages" class="table table-striped">
         <thead>
           <tr>
-            <th>&nbsp;</th>
             <th>Line</th>
             <th>Message</th>
           </tr>
         </thead>
         <tbody id="messages-list">
           <tr ng-repeat="msg in messages">          
-            <td>
-              <span class="glyphicon glyphicon-exclamation-sign"></span>
-            </td>
             <td>
               {{ msg.node.loc.start.line }}
             </td>

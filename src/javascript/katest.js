@@ -27,6 +27,35 @@ Context.prototype.warning = function (message, node) {
     });
 };
 
+function initTemplate(templ) {
+    _.transform(templ, function (result, val, key) {
+        var data = templ[key];
+        if (_.isString(data)) {
+            result[key] = {'_found': false, 'nodeType': key};
+        } else {
+            result[key] = initTemplate(val);
+        }
+    });
+}
+
+function isComplete(templ) {
+    var complete = true;
+    _.forEachOwn(templ, function (subtempl, nodeType) {
+        if (_.has(subtempl, '_found')) {
+            if (!subtempl._found) {
+                complete = false;
+                return false;
+            }
+        } else {
+            if (!isComplete(subtempl)) {
+                complete = false;
+                return false;
+            }
+        }
+    });
+    return complete;
+}
+
 /**
  * Takes parsed JS code and runs the specified tests against it.
  *
@@ -46,13 +75,16 @@ module.exports = function checkAST(ast, options) {
     options = _.defaults(options || {}, {
         whitelist: [],
         blacklist: [],
-        recognizers: []
+        recognizers: [],
+        templates: []
     });
     var recognizers = _.clone(options.recognizers);
     var whitelist = {};
     _.forEach(options.whitelist, function (nodeType) {
         whitelist[nodeType] = false;
     });
+    var templates = _.map(options.templates, initTemplate);
+    
 
     // Add a recognizer to reject all blacklisted node types
     recognizers.push(function (context, node) {
@@ -62,17 +94,13 @@ module.exports = function checkAST(ast, options) {
     });
 
     var ctx = new Context();
+    var targets = {};
+    var found = [];
+    var foundStack = [];
 
     // Walk through the AST
     traverse(ast, {
-        pre: function (node, parent, prop, idx) {
-            console.log({
-                node: node,
-                parent: parent,
-                prop: prop,
-                idx: idx
-            });
-
+        pre: function (node) {
             // Keep track of which whitelisted properties have been found
             if (_.has(whitelist, node.type)) {
                 whitelist[node.type] = true;
@@ -81,18 +109,32 @@ module.exports = function checkAST(ast, options) {
             _.each(recognizers, function (rec) {
                 rec(ctx, node);
             });
+
+            // Templates
+            _.forEach(found, function (outerNodeType) {
+                _.remove(templates[outerNodeType], function (innerNodeType) {
+                    return innerNodeType == node.type;
+                });
+            });
+            
+            foundStack.push(found);
+            found = _.clone(found);
+            found.push(node.type);
+        },
+        post: function () {
+            found = foundStack.pop();
         }
     });
     
-    console.log(options.whitelist);
-    console.log(whitelist);
     // Ensure that all whitelisted node types were used
     _.forOwn(whitelist, function (found, nodeType) {
-        console.log('whitelist: ' + nodeType + ' : ' + found);
         if (!found) {
             ctx.error('Expected construct not found: ' + nodeType);
         }
     });
+
+    // Ensure that all templates have been matched
+    
 
     return ctx;
 };
