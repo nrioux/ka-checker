@@ -1,4 +1,4 @@
-# Khan Academy Code Checker
+# Live Code Checker
 The structure of this project is based on [Gulp Starter](https://github.com/greypants/gulp-starter).
 
 ## Dependencies
