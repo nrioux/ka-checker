@@ -1,9 +1,0 @@
-var CodeMirror = require("codemirror");
-require("codemirror/mode/javascript/javascript.js");
-var editor = CodeMirror(document.body, {
-    lineNumbers: true,
-    value: "function myScript(){return 100;}\n",
-    mode: "javascript",
-    indentUnit: 4
-});
-
